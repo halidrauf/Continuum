@@ -20,91 +20,22 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
 	"continuumworker/src/logging"
-	"continuumworker/src/model"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-// StatusResponse for JSON output
-type StatusResponse struct {
-	ID              string      `json:"id"`
-	StartTime        time.Time   `json:"start_time"`
-	Uptime           string      `json:"uptime"`
-	TasksProcessed   uint64      `json:"tasks_processed"`
-	TasksSuccessful  uint64      `json:"tasks_successful"`
-	TasksFailed      uint64      `json:"tasks_failed"`
-	DatabaseFailures uint64      `json:"database_failures"`
-	CurrentTask      *model.Task `json:"current_task,omitempty"`
-}
-
-// WorkerStats tracks the internal state of the worker
-type WorkerStats struct {
-	mu             sync.RWMutex
-	statusResponse StatusResponse
-}
-
-func NewWorkerStats() *WorkerStats {
-	return &WorkerStats{
-		statusResponse: StatusResponse{
-			StartTime: time.Now(),
-		},
-	}
-}
-
-// UpdateStats updates the worker statistics
-func (s *WorkerStats) UpdateStats(id string, processed, success, failed, databaseFailures uint64, current *model.Task) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if id != "" {
-		s.statusResponse.ID = id
-	}
-	s.statusResponse.TasksProcessed += processed
-	s.statusResponse.TasksSuccessful += success
-	s.statusResponse.TasksFailed += failed
-	s.statusResponse.CurrentTask = current
-	s.statusResponse.DatabaseFailures += databaseFailures
-
-	logging.UpdateSpanValue("worker_tasks_total", float64(s.statusResponse.TasksProcessed))
-	logging.UpdateSpanValue("worker_tasks_succeeded", float64(s.statusResponse.TasksSuccessful))
-	logging.UpdateSpanValue("worker_tasks_failed", float64(s.statusResponse.TasksFailed))
-	logging.UpdateSpanValue("worker_tasks_error_rate", float64(s.statusResponse.TasksFailed)/float64(s.statusResponse.TasksProcessed))
-	logging.UpdateSpanValue("worker_database_failures", float64(s.statusResponse.DatabaseFailures))
-}
-
-// GetStats returns the current statistics as a response struct
-func (s *WorkerStats) GetStats() StatusResponse {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	resp := s.statusResponse
-	resp.Uptime = time.Since(s.statusResponse.StartTime).Truncate(time.Second).String()
-	return resp
-}
-
-// GlobalStats represents system-wide metrics
-type GlobalStats struct {
-	TotalTasks      int     `json:"total_tasks"`
-	PendingTasks    int     `json:"pending_tasks"`
-	RunningTasks    int     `json:"running_tasks"`
-	CompletedTasks  int     `json:"completed_tasks"`
-	FailedTasks     int     `json:"failed_tasks"`
-	AvgExecutionSec float64 `json:"avg_execution_seconds"`
-	ThroughputTasks float64 `json:"throughput_tasks_per_hour"`
-}
-
 // APIServer holds dependencies for the HTTP handlers
 type APIServer struct {
 	db    *sql.DB
-	stats *WorkerStats
+	stats *logging.WorkerStats
 }
 
 // StartAPIServer starts the HTTP server with graceful shutdown and OTel
-func StartAPIServer(port string, db *sql.DB, workerStats *WorkerStats) error {
+func StartAPIServer(port string, db *sql.DB, workerStats *logging.WorkerStats) error {
 	// 1. Setup Context for Graceful Shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -178,7 +109,7 @@ func (s *APIServer) statusHandler(w http.ResponseWriter, r *http.Request) {
 func (s *APIServer) globalStatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var gs GlobalStats
+	var gs logging.GlobalStats
 
 	// Combined query for better performance
 	query := `
