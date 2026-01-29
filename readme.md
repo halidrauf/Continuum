@@ -19,31 +19,45 @@ Unlike traditional workers that execute code in-process, Continuum spawns and ma
 Continuum uses a decentralized architecture where workers communicate directly with a central database. This eliminates the need for a complex message broker while maintaining strict ACID compliance for task state.
 
 ```mermaid
+%%{init: { 'theme': 'dark', 'themeVariables': { 'primaryColor': '#1f2937', 'primaryTextColor': '#f3f4f6', 'primaryBorderColor': '#3b82f6', 'lineColor': '#9ca3af', 'secondaryColor': '#111827', 'tertiaryColor': '#1f2937'}}}%%
 graph TD
-    subgraph "Worker Host"
-        W1[Worker Process]
-        MD[Docker Daemon]
-   
-        subgraph "Container Pool"
-            T1[Persistent Python Container]
+    subgraph WContainer ["Worker Environment (Container)"]
+        direction TB
+        subgraph WP ["Worker Process Internals"]
+            direction LR
+            W1[Worker Module]
+            J[Janitor/Watchdog]
+            R[Idle Reaper]
         end
+        MD[Docker Daemon Link / Socket]
     end
 
-    subgraph "Reliability Layer"
-        J[Janitor/Watchdog]
-        R[Idle Reaper]
+    subgraph CP ["External Execution Pool"]
+        T1([Persistent Python Container])
     end
 
-    subgraph "Storage Layer (SQL)"
+    subgraph Storage ["Persistence Layer"]
         DB[(PostgreSQL / CockroachDB)]
     end
 
-    W1 -- "FOR UPDATE SKIP LOCKED" --> DB
+    %% Connections
+    W1 -- "FOR UPDATE<br/>SKIP LOCKED" --> DB
     W1 -- "Exec / Copy" --> T1
     W1 -- "Lifecycle Mgmt" --> MD
-    T1 -- "Logs/Exit Code" --> W1
+    T1 -- "Logs / Exit Code" --> W1
+    
     J -- "Resurrect Zombie Tasks" --> DB
-    R -- "Cleanup Inactive Containers" --> MD
+    R -- "Cleanup Inactive<br/>Containers" --> MD
+    MD -. "DooD Orchestration" .-> T1
+
+    %% Styling
+    style WContainer fill:#111827,stroke:#3b82f6,stroke-width:2px
+    style WP fill:#1f2937,stroke:#60a5fa,stroke-dasharray: 5 5
+    style CP fill:#064e3b,stroke:#10b981,stroke-width:2px
+    style Storage fill:#1e1b4b,stroke:#6366f1,stroke-width:2px
+    style MD fill:#374151,stroke:#9ca3af
+    style T1 fill:#065f46,stroke:#34d399
+
 ```
 
 ### 3. Persistent & Isolated Execution
