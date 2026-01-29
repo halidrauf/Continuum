@@ -1,0 +1,15 @@
+.env
+.certs/
+*.log
+*.exe
+*.out
+*.bin
+*.tar.gz
+*.tar
+*.zip
+*.lock
+*.swp
+*.swo
+*.DS_Store
+*.DS_Store?
+Thumbs.db
