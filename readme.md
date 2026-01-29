@@ -41,6 +41,7 @@ graph TD
     end
 
     %% Connections
+    DB -- "LISTEN / NOTIFY<br/>(New Task Trigger)" --> W1
     W1 -- "FOR UPDATE<br/>SKIP LOCKED" --> DB
     W1 -- "Exec / Copy" --> T1
     W1 -- "Lifecycle Mgmt" --> MD
@@ -57,7 +58,6 @@ graph TD
     style Storage fill:#1e1b4b,stroke:#6366f1,stroke-width:2px
     style MD fill:#374151,stroke:#9ca3af
     style T1 fill:#065f46,stroke:#34d399
-
 ```
 
 ### 3. Persistent & Isolated Execution
