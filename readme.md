@@ -60,7 +60,7 @@ graph TD
     style T1 fill:#065f46,stroke:#34d399
 ```
 
-### 3. Persistent & Isolated Execution
+### Persistent & Isolated Execution
 
 Continuum uses a high-performance container pooling strategy to minimize execution overhead.
 
@@ -86,14 +86,14 @@ Continuum implements a multi-layered recovery strategy:
 - **Worker Crash Recovery:** A background process detects tasks stuck in `processing` beyond a defined TTL and marks them for retry or failure.
 - **Execution Retries:** Individual tasks are automatically retried up to 3 times upon engine level failures.
 
-### 3. Sub-Second Latency (Persistent Pooling)
+### Sub-Second Latency (Persistent Pooling)
 
 Using a container pooling strategy, Continuum achieves sub-second execution latency.
 
 - **Warm Pools:** Reuses pre-initialized containers via the Docker `Exec` API.
 - **Zero-Setup Overhead:** Transfers code/payload directly into running sandboxes, bypassing the "Create -> Start -> Init" cycle.
 
-### 4. Real-Time Monitoring & Metrics
+### Real-Time Monitoring & Metrics
 
 Every worker exposes a built-in HTTP API server for health checks and performance analysis.
 
@@ -101,7 +101,7 @@ Every worker exposes a built-in HTTP API server for health checks and performanc
 - **`/global-status`:** Aggregated system-wide performance (throughput, average execution time, queue depth).
 - **`OpenTelemetry Support`:** Distributed tracing and metrics for monitoring and observability.
 
-### 5. Multitenant Security Sandbox
+### Multitenant Security Sandbox
 
 Defense-in-depth isolation for untrusted code execution:
 
@@ -109,7 +109,7 @@ Defense-in-depth isolation for untrusted code execution:
 - **Privilege Separation:** Scripts run as restricted, non-root `sandboxuser`.
 - **Resource Quotas:** Hard limits on CPU and Memory usage per container.
 
-### 6. Low-Latency Triggering
+### Low-Latency Triggering
 
 Leverages PostgreSQL's native `LISTEN/NOTIFY` system to wake workers immediately when new tasks arrive, supplemented by periodic fallback polling for extreme reliability.
 
