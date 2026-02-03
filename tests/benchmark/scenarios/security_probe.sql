@@ -17,12 +17,15 @@
 INSERT INTO CODES (id, code) VALUES 
 ('44444444-4444-4444-4444-444444444444', '
 import socket
+import sys
 print("Attempting to connect to Postgres...")
 try:
     s = socket.create_connection(("postgres", 5432), timeout=2)
     print("CRITICAL SECURITY VULNERABILITY: Internal DB reached!")
+    sys.exit(1) # Fail if we can connect
 except Exception as e:
     print(f"Network probe failed as expected: {e}")
+    sys.exit(0) # Pass if we cannot connect
 ') ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO TASKS (name, description, status, payload, code) VALUES 
@@ -33,13 +36,16 @@ INSERT INTO TASKS (name, description, status, payload, code) VALUES
 -- Expected Result: FAILURE (Permission denied)
 INSERT INTO CODES (id, code) VALUES 
 ('55555555-5555-5555-5555-555555555555', '
+import sys
 print("Attempting to write to /root...")
 try:
     with open("/root/pwned.txt", "w") as f:
         f.write("pwned")
     print("CRITICAL SECURITY VULNERABILITY: Root FS is writable!")
+    sys.exit(1)
 except Exception as e:
     print(f"Privilege probe failed as expected: {e}")
+    sys.exit(0)
 ') ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO TASKS (name, description, status, payload, code) VALUES 
@@ -51,14 +57,17 @@ INSERT INTO TASKS (name, description, status, payload, code) VALUES
 INSERT INTO CODES (id, code) VALUES 
 ('66666666-6666-6666-6666-666666666666', '
 import socket
+import sys
 print("Attempting to reach host.docker.internal...")
 try:
     ip = socket.gethostbyname("host.docker.internal")
     print(f"Hostname resolved to {ip}")
     s = socket.create_connection((ip, 22), timeout=2)
     print("CRITICAL SECURITY VULNERABILITY: Host machine reached!")
+    sys.exit(1)
 except Exception as e:
     print(f"Host escape probe failed as expected: {e}")
+    sys.exit(0)
 ') ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO TASKS (name, description, status, payload, code) VALUES 

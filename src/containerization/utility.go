@@ -89,7 +89,10 @@ func GetOrCreateContainer(ctx context.Context, cli *client.Client, networkID str
 				AttachStderr: true,
 				// We just remove everything in the container home directory to be safe in case a python code leaves some files behind. /root is already inaccessible.
 				Cmd: []string{"sh", "-c", `
-					rm -rf /*
+					rm -f /script.py /payload.json
+					find /tmp -mindepth 1 -delete 2>/dev/null || true
+					find /var/tmp -mindepth 1 -delete 2>/dev/null || true
+					find /home/sandboxuser -mindepth 1 -delete 2>/dev/null || true
 				`},
 			}
 			exeCreate, err := cli.ContainerExecCreate(ctx, activeContainerID, execConfig)

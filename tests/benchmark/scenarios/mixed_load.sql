@@ -18,7 +18,7 @@ INSERT INTO CODES (id, code) VALUES
 ('33333333-3333-3333-3333-333333333333', 'import json, sys; print(f"Processing payload: {open(sys.argv[1]).read()}")')
 ON CONFLICT (id) DO NOTHING;
 
--- 2. Insert 1000 tasks for benchmarking
+-- 2. Insert 2000 tasks for benchmarking
 DO $$
 DECLARE
     i INT;
@@ -28,7 +28,7 @@ DECLARE
         '33333333-3333-3333-3333-333333333333'
     ]::UUID[];
 BEGIN
-    FOR i IN 1..1000 LOOP
+    FOR i IN 1..2000 LOOP
         INSERT INTO TASKS (name, description, status, payload, code)
         VALUES (
             'Benchmark Task ' || i,

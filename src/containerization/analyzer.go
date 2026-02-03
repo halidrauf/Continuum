@@ -13,5 +13,5 @@ package containerization
 
 // TODO: AnalyzeCode checks for malicious patterns in Python code
 func AnalyzeCode(code string) (bool, error) {
-	return true, nil
+	return false, nil
 }

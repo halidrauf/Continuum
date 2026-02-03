@@ -46,7 +46,7 @@ graph TD
     W1 -- "Exec / Copy" --> T1
     W1 -- "Lifecycle Mgmt" --> MD
     T1 -- "Logs / Exit Code" --> W1
-    
+  
     J -- "Resurrect Zombie Tasks" --> DB
     R -- "Cleanup Inactive<br/>Containers" --> MD
     MD -. "DooD Orchestration" .-> T1
@@ -207,20 +207,20 @@ EXECUTE FUNCTION notify_task_change();
 
 Continuum is configured using environment variables, typically stored in a `.env` file in the root directory.
 
-| Variable                   | Default       | Description                                                                                                       |
-| :------------------------- | :------------ | :---------------------------------------------------------------------------------------------------------------- |
-| `DB_USER`                | `user`      | PostgreSQL database username.                                                                                     |
-| `DB_PASSWORD`            | `password`  | PostgreSQL database password.                                                                                     |
-| `DB_NAME`                | `continuum` | Name of the database.                                                                                             |
-| `DB_HOST`                | `localhost` | Database host (use `postgres` if running in Docker).                                                            |
-| `DB_PORT`                | `5432`      | Database port.                                                                                                    |
-| `CONTAINER_MEMORY_MB`    | `512`       | Memory limit for each task container in MB.                                                                       |
-| `CONTAINER_CPU_LIMIT`    | `0.5`       | Fractional CPU limit for each task container.                                                                     |
-| `CONTAINER_IDLE_TIMEOUT` | `5m`        | How long a container stays alive after its last task.                                                             |
-| `POLLING_INTERVAL`       | `5`         | How often the worker polls for new tasks in seconds as a fallback in case of failure of the LISTEN/NOTIFY system. |
-| `MIN_PRIORITY`           | `0`         | Minimum priority for tasks to be picked up.                                                                      |
-| `MAX_PRIORITY`           | `0`         | Maximum priority for tasks to be picked up.                                                                      |
-| `CONTAINER_IMAGE`        | `python:3.9-slim` | Docker image to use for task containers. |
+| Variable                   | Default             | Description                                                                                                       |
+| :------------------------- | :------------------ | :---------------------------------------------------------------------------------------------------------------- |
+| `DB_USER`                | `user`            | PostgreSQL database username.                                                                                     |
+| `DB_PASSWORD`            | `password`        | PostgreSQL database password.                                                                                     |
+| `DB_NAME`                | `continuum`       | Name of the database.                                                                                             |
+| `DB_HOST`                | `localhost`       | Database host (use `postgres` if running in Docker).                                                            |
+| `DB_PORT`                | `5432`            | Database port.                                                                                                    |
+| `CONTAINER_MEMORY_MB`    | `512`             | Memory limit for each task container in MB.                                                                       |
+| `CONTAINER_CPU_LIMIT`    | `0.5`             | Fractional CPU limit for each task container.                                                                     |
+| `CONTAINER_IDLE_TIMEOUT` | `5m`              | How long a container stays alive after its last task.                                                             |
+| `POLLING_INTERVAL`       | `5`               | How often the worker polls for new tasks in seconds as a fallback in case of failure of the LISTEN/NOTIFY system. |
+| `MIN_PRIORITY`           | `0`               | Minimum priority for tasks to be picked up.                                                                       |
+| `MAX_PRIORITY`           | `0`               | Maximum priority for tasks to be picked up.                                                                       |
+| `CONTAINER_IMAGE`        | `python:3.9-slim` | Docker image to use for task containers.                                                                          |
 
 > [!TIP]
 > When running with the provided `docker-compose.yml`, the `DB_HOST` should be set to `postgres`. Note that the `docker-compose` setup is specifically designed for **local testing and benchmarking** purposes.
@@ -315,11 +315,43 @@ Continuum provides **"At-Least-Once"** delivery guarantees. If a worker crashes 
 
 ## 📊 Performance Benchmarks (v0.1)
 
-Conducted on a standard development machine with 10 worker replicas.
+Conducted on a standard development machine with 5 worker replicas.
 
 | Metric                        | Result            | Notes                                  |
 | :---------------------------- | :---------------- | :------------------------------------- |
-| **Avg Execution Delay** | **658ms**   | Including DB roundtrip and Docker Exec |
-| **Burst Throughput**    | **~15 tps** | Sustained across 10 workers            |
+| **Avg Execution Delay** | **240ms**   | Including DB roundtrip and Docker Exec |
+| **Burst Throughput**    | **~23 tps** | Sustained across 5 worker replicas     |
 | **Success Rate**        | **100%**    | Verified with 2000+ benchmarked tasks  |
 | **Cold Start Penalty**  | ~3,500ms          | Only happens once when pool is empty   |
+
+---
+
+## 📈 Running Benchmarks
+
+Continuum includes a built-in benchmarking suite to stress-test your worker deployment.
+
+### 1. Requirements
+
+- Docker and PostgreSQL must be running (`docker-compose up -d`).
+- Go 1.25+ installed (to build the runner).
+
+### 2. Run the Suite
+
+You can run the suite locally using the batch script, or via Docker (recommended for consistency):
+
+To run a specific suite inside the container network:
+
+```bash
+docker-compose run --rm benchmark -db_host=postgres -api_host=worker -suite=network
+```
+
+*(Replace `network` with `cpu`, `mixed`, or `security`)*
+
+You can choose between:
+
+- **CPU Stress Test**: Runs matrix multiplication to test container resource limits.
+- **Network I/O Test**: Fetches data from `jsonplaceholder.typicode.com` to test external connectivity and JSON processing.
+- **Mixed Load Test**: legacy `test.sql` suite with varied workload.
+- **Security Probe**: Checks container isolation (should fail).
+- **Realistic Load Test**: Runs a mix of CPU, IO, and network to test container resource limits.
+- **All**: Runs all suites.
