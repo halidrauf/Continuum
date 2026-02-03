@@ -337,7 +337,7 @@ Continuum includes a built-in benchmarking suite to stress-test your worker depl
 
 ### 2. Run the Suite
 
-You can run the suite locally using the batch script, or via Docker (recommended for consistency):
+You can run the suite via Docker Compose (recommended for consistency):
 
 To run a specific suite inside the container network:
 
